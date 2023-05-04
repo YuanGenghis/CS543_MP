@@ -22,10 +22,48 @@ def render(Z, N, A, S,
 
   # Ambient Term
   I = A * ambient_light
-  
-  # Diffuse Term
 
-  # Specular Term
+
+  #Point light for both term and directoin light for specular term
+  for i in range(h):
+        for j in range(w):
+              phsical_z = Z[i, j]
+              x = (j - cx) * phsical_z / f
+              y = (i - cy) * phsical_z / f
+              Vi = point_light_loc[0] - np.array([x, y, Z[i, j]])
+              Vi = Vi / np.linalg.norm(Vi)
+              # Diffuse Term point light
+              I[i, j] += np.maximum(np.dot(N[i, j], Vi), 0) * point_light_strength[0] * A[i, j]
+
+
+              Si = 2 * np.dot(N[i, j], Vi) * N[i, j] + (-Vi)
+              Si = Si / np.linalg.norm(Si)
+
+              Vr = np.array([0, 0, 0]) - np.array([x, y, Z[i][j]])
+              Vr = Vr / np.linalg.norm(Vr)
+
+              # Specular Term point light
+              specular_point_light = np.power(np.maximum(np.dot(Vr, Si), 0), k_e) * point_light_strength[0] * S[i, j]
+              I[i, j] += specular_point_light
+
+              directional_dir = np.array(directional_light_dirn[0])
+              directional_dir = directional_dir / np.linalg.norm(directional_dir)
+
+              dir_Si = - directional_dir - np.dot(2 * (np.dot( - directional_dir, N[i, j])),  N[i, j])
+      
+              dir_Si = dir_Si / np.linalg.norm(dir_Si)
+              specular_directional_light = np.power(np.maximum(np.dot(Vr, dir_Si), 0), k_e) * directional_light_strength[0] * S[i, j]
+
+              # Specular Term direction light
+              I[i, j] += specular_directional_light
+            
+  # Diffuse Term direction light
+  diffuse_directional_light = 0.0
+  for i in range(len(directional_light_dirn)):
+        directional_light_dir = np.array(directional_light_dirn[i])
+        directional_light_dir = directional_light_dir / np.linalg.norm(directional_light_dir)
+        diffuse_directional_light += np.maximum(np.dot(N, directional_light_dir), 0) * directional_light_strength[i]
+  I += diffuse_directional_light * A
 
   I = np.minimum(I, 1)*255
   I = I.astype(np.uint8)
