@@ -1,5 +1,7 @@
 import numpy as np
+from scipy import signal
 import scipy
+import cv2
 
 def compute_corners(I):
   # Currently this code proudces a dummy corners and a dummy corner response
@@ -13,16 +15,29 @@ def compute_corners(I):
   #   corners: H x W map in uint8 format _after_ non-max suppression. Each
   #   pixel stores the score for being a corner. Non-max suppressed pixels
   #   should have a low / zero-score.
+
+  I = cv2.cvtColor(I, cv2.COLOR_BGR2GRAY)
   
-  rng = np.random.RandomState(int(np.sum(I.astype(np.float32))))
-  sz = I.shape[:2]
-  corners = rng.rand(*sz)
-  corners = np.clip((corners - 0.95)/0.05, 0, 1)
+  I = I.astype(np.float32)/255
   
-  response = scipy.ndimage.gaussian_filter(corners, 4, order=0, output=None,
-                                           mode='reflect')
-  corners = corners * 255.
-  corners = np.clip(corners, 0, 255)
+  dx = signal.convolve2d(I, np.array([[-1, 0, 1]]), mode='same', boundary='symm')
+  dy = signal.convolve2d(I, np.array([[-1, 0, 1]]).T, mode='same', boundary = 'symm')
+  Ixx, Iyy, Ixy = dx**2, dy**2, dx*dy
+  Ix = scipy.ndimage.gaussian_filter(Ixx, 0.618, order=0, output=None, mode='reflect')
+  Iy = scipy.ndimage.gaussian_filter(Iyy, 0.618, order=0, output=None, mode='reflect')
+  xy = scipy.ndimage.gaussian_filter(Ixy, 0.618, order=0, output=None, mode='reflect')
+  H, W = I.shape
+  alpha = 0.06
+  response = Ix*Iy - xy**2 - alpha*(Ix + Iy)**2
+
+  corners = response / response.max() * 255
+  for h in range(H):
+      for w in range(W):
+          for i in range(max(0, h - 4), min(h + 4, H)):
+              for j in range(max(0, w - 4), min(w + 4, W)):
+                  if response[i, j] > response[h, w]:
+                      corners[h, w] = 0
+
   corners = corners.astype(np.uint8)
   
   response = response * 255.

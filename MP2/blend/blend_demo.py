@@ -17,6 +17,8 @@ def main(_):
   I1 = cv2.imread(FLAGS.im1)
   I2 = cv2.imread(FLAGS.im2)
   mask = cv2.imread(FLAGS.mask)
+  I2.resize(I1.shape) 
+  mask.resize(I1.shape)
   
   out = blend(I1, I2, mask)
   # save image
