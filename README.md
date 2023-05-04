@@ -1,3 +1,1 @@
-# CS543_MP
-
-This is a personal repositery for UIUC CS543(Computer Vision) MP
+### This is a repo for CS543/ECE549 MPs, personal use ONLY! 
